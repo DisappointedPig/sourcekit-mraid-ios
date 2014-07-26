@@ -796,7 +796,10 @@ typedef enum {
         // For interstitials, we define maxSize to be the same as screen size, so set the value there.
         return;
     }
-    CGSize maxSize = self.rootViewController.view.bounds.size;
+// jjk - I think max size should pull from uidevice (for max size) - I'll probably have to change this later
+//    CGSize maxSize = self.rootViewController.view.bounds.size;
+    CGSize maxSize = [[UIScreen mainScreen] bounds].size;
+    
     if (!CGSizeEqualToSize(maxSize, previousMaxSize)) {
         [self injectJavaScript:[NSString stringWithFormat:@"mraid.setMaxSize(%d,%d);",
                                 (int)maxSize.width,
@@ -922,7 +925,15 @@ typedef enum {
             [SourceKitLogger warning:[NSString stringWithFormat:@"No sms support has been included."]];
         }
         return NO;
+    } else if([scheme isEqualToString:@"http"] && (state == MRAIDStateDefault)) {
+             NSLog(@"[%d] ---(%@)---", navigationType, [[request URL] absoluteString]);
+             if(navigationType == UIWebViewNavigationTypeLinkClicked) {
+             [self open:[[request URL] absoluteString]];
+             return NO;
+         }
+         return YES;
     }
+
     [SourceKitLogger debug:[NSString stringWithFormat:@"JS webview load: %@",
                       [absUrlString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding ]]];
     return YES;
