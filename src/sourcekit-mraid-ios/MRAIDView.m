@@ -926,8 +926,7 @@ typedef enum {
         }
         return NO;
     } else if([scheme isEqualToString:@"http"] && (state == MRAIDStateDefault)) {
-             NSLog(@"[%d] ---(%@)---", navigationType, [[request URL] absoluteString]);
-             if(navigationType == UIWebViewNavigationTypeLinkClicked) {
+         if(navigationType == UIWebViewNavigationTypeLinkClicked) {
              [self open:[[request URL] absoluteString]];
              return NO;
          }
