@@ -182,7 +182,7 @@ typedef enum {
         [self initWebView:webView];
         
         currentWebView = webView;
-//        [webView setBackgroundColor:[UIColor clearColor]]; NOTE : jjk
+        [webView setBackgroundColor:[UIColor clearColor]]; // NOTE : jjk - added to prevent uiwebview grey background
         [self addSubview:webView];
         
         previousMaxSize = CGSizeZero;
