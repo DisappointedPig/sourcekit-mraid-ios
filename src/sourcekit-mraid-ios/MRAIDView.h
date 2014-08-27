@@ -44,4 +44,6 @@
    serviceDelegate:(id<MRAIDServiceDelegate>)serviceDelegate
  rootViewController:(UIViewController *)rootViewController;
 
+- (void)forceStopLoad;
+
 @end

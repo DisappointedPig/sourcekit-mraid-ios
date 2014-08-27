@@ -296,6 +296,9 @@ typedef enum {
     [self fireSizeChangeEvent];
 }
 
+- (void)forceStopLoad {
+    [webView stopLoading];
+}
 
 #pragma mark - interstitial support
 
