@@ -184,10 +184,6 @@ typedef enum {
         webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height)];
         [self initWebView:webView];
         currentWebView = webView;
-<<<<<<< HEAD:src/sourcekit-mraid-ios/MRAIDView.m
-        [webView setBackgroundColor:[UIColor clearColor]]; // NOTE : jjk - added to prevent uiwebview grey background
-=======
->>>>>>> upstream/master:src/MRAID/SKMRAIDView.m
         [self addSubview:webView];
         
         previousMaxSize = CGSizeZero;
@@ -965,23 +961,8 @@ typedef enum {
             // Need to let browser to handle rendering and other things
             return YES;
         }
-<<<<<<< HEAD:src/sourcekit-mraid-ios/MRAIDView.m
-        return NO;
-    } else if([scheme isEqualToString:@"http"] && (state == MRAIDStateDefault)) {
-         if(navigationType == UIWebViewNavigationTypeLinkClicked) {
-             [self open:[[request URL] absoluteString]];
-             return NO;
-         }
-         return YES;
-    }
-
-    [SourceKitLogger debug:[NSString stringWithFormat:@"JS webview load: %@",
-                      [absUrlString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding ]]];
-    return YES;
-=======
     }
     return NO;
->>>>>>> upstream/master:src/MRAID/SKMRAIDView.m
 }
 
 #pragma mark - MRAIDModalViewControllerDelegate
