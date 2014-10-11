@@ -1,41 +1,42 @@
 //
-//  MRAIDInterstitial.m
+//  SKMRAIDInterstitial.m
 //  MRAID
 //
 //  Created by Jay Tucker on 10/18/13.
 //  Copyright (c) 2013 Nexage, Inc. All rights reserved.
 //
 
-#import "MRAIDInterstitial.h"
-#import "MRAIDView.h"
-#import "SourceKitLogger.h"
-#import "MRAIDServiceDelegate.h"
+#import "SKMRAIDInterstitial.h"
+#import "SKMRAIDView.h"
+#import "SKLogger.h"
+#import "SKMRAIDServiceDelegate.h"
 
-@interface MRAIDInterstitial () <MRAIDViewDelegate, MRAIDServiceDelegate>
+@interface SKMRAIDInterstitial () <SKMRAIDViewDelegate, SKMRAIDServiceDelegate>
 {
     BOOL isReady;
-    MRAIDView *mraidView;
+    SKMRAIDView *mraidView;
     NSArray* supportedFeatures;
 }
 
 @end
 
-@interface MRAIDView()
+@interface SKMRAIDView()
 
 - (id)initWithFrame:(CGRect)frame
        withHtmlData:(NSString*)htmlData
         withBaseURL:(NSURL*)bsURL
      asInterstitial:(BOOL)isInter
   supportedFeatures:(NSArray *)features
-           delegate:(id<MRAIDViewDelegate>)delegate
-   serviceDelegate:(id<MRAIDServiceDelegate>)serviceDelegate
+           delegate:(id<SKMRAIDViewDelegate>)delegate
+   serviceDelegate:(id<SKMRAIDServiceDelegate>)serviceDelegate
  rootViewController:(UIViewController *)rootViewController;
 
 @end
 
-@implementation MRAIDInterstitial
+@implementation SKMRAIDInterstitial
 
 @synthesize isViewable=_isViewable;
+@synthesize rootViewController=_rootViewController;
 
 - (id)init {
     @throw [NSException exceptionWithName:NSInternalInconsistencyException
@@ -44,12 +45,18 @@
     return nil;
 }
 
+- (void) dealloc
+{
+    mraidView = nil;
+    supportedFeatures = nil;
+}
+
 // designated initializer
 - (id)initWithSupportedFeatures:(NSArray *)features
                    withHtmlData:(NSString*)htmlData
                     withBaseURL:(NSURL*)bsURL
-                       delegate:(id<MRAIDInterstitialDelegate>)delegate
-               serviceDelegate:(id<MRAIDServiceDelegate>)serviceDelegate
+                       delegate:(id<SKMRAIDInterstitialDelegate>)delegate
+               serviceDelegate:(id<SKMRAIDServiceDelegate>)serviceDelegate
              rootViewController:(UIViewController *)rootViewController
 {
     self = [super init];
@@ -61,7 +68,7 @@
         
         
         CGRect screenRect = [[UIScreen mainScreen] bounds];
-        mraidView = [[MRAIDView alloc] initWithFrame:screenRect
+        mraidView = [[SKMRAIDView alloc] initWithFrame:screenRect
                                         withHtmlData:htmlData
                                          withBaseURL:bsURL
                                       asInterstitial:YES
@@ -75,10 +82,15 @@
     return self;
 }
 
+- (BOOL)isAdReady
+{
+    return isReady;
+}
+
 - (void)show
 {
     if (!isReady) {
-        [SourceKitLogger warning:@"interstitial is not ready to show"];
+        [SKLogger warning:@"MRAID - Interstitial" withMessage:@"interstitial is not ready to show"];
         return;
     }
     
@@ -90,19 +102,25 @@
 
 -(void)setIsViewable:(BOOL)newIsViewable
 {
-    [SourceKitLogger debug:[NSString stringWithFormat: @"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
+    [SKLogger debug:@"MRAID - Interstitial" withMessage:[NSString stringWithFormat: @"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
     mraidView.isViewable=newIsViewable;
 }
 
 -(BOOL)isViewable
 {
-    [SourceKitLogger debug:[NSString stringWithFormat: @"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
+    [SKLogger debug:@"MRAID - Interstitial" withMessage:[NSString stringWithFormat: @"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
     return _isViewable;
+}
+
+- (void)setRootViewController:(UIViewController *)newRootViewController
+{
+    mraidView.rootViewController = newRootViewController;
+    [SKLogger debug:@"MRAID - Interstitial" withMessage:[NSString stringWithFormat:@"setRootViewController: %@", newRootViewController]];
 }
 
 #pragma mark - MRAIDViewDelegate
 
-- (void)mraidViewAdReady:(MRAIDView *)mraidView
+- (void)mraidViewAdReady:(SKMRAIDView *)mraidView
 {
     NSLog(@"%@ MRAIDViewDelegate %@", [[self class] description], NSStringFromSelector(_cmd));
     isReady = YES;
@@ -111,7 +129,7 @@
     }
 }
 
-- (void)mraidViewAdFailed:(MRAIDView *)mraidView
+- (void)mraidViewAdFailed:(SKMRAIDView *)mraidView
 {
     NSLog(@"%@ MRAIDViewDelegate %@", [[self class] description], NSStringFromSelector(_cmd));
     isReady = YES;
@@ -120,7 +138,7 @@
     }
 }
 
-- (void)mraidViewWillExpand:(MRAIDView *)mraidView
+- (void)mraidViewWillExpand:(SKMRAIDView *)mraidView
 {
     NSLog(@"%@ MRAIDViewDelegate %@", [[self class] description], NSStringFromSelector(_cmd));
     if ([self.delegate respondsToSelector:@selector(mraidInterstitialWillShow:)]) {
@@ -128,7 +146,7 @@
     }
 }
 
-- (void)mraidViewDidClose:(MRAIDView *)mv
+- (void)mraidViewDidClose:(SKMRAIDView *)mv
 {
     NSLog(@"%@ MRAIDViewDelegate %@", [[self class] description], NSStringFromSelector(_cmd));
     if ([self.delegate respondsToSelector:@selector(mraidInterstitialDidHide:)]) {
@@ -140,14 +158,14 @@
     isReady = NO;
 }
 
-#pragma mark - MRAIDServiceDelegate callbacks
-
-- (void)mraidServiceCallTelWithUrlString:(NSString *)urlString
+- (void)mraidViewNavigate:(SKMRAIDView *)mraidView withURL:(NSURL *)url
 {
-    if ([self.serviceDelegate respondsToSelector:@selector(mraidServiceCallTelWithUrlString:)]) {
-        [self.serviceDelegate mraidServiceCallTelWithUrlString:urlString];
+    if ([self.delegate respondsToSelector:@selector(mraidInterstitialNavigate:withURL:)]) {
+        [self.delegate mraidInterstitialNavigate:self withURL:url];
     }
 }
+
+#pragma mark - MRAIDServiceDelegate callbacks
 
 - (void)mraidServiceCreateCalendarEventWithEventJSON:(NSString *)eventJSON
 {
@@ -176,13 +194,5 @@
         [self.serviceDelegate mraidServiceStorePictureWithUrlString:urlString];
     }
 }
-
-- (void)mraidServiceSendSmsWithUrlString:(NSString *)urlString
-{
-    if ([self.serviceDelegate respondsToSelector:@selector(mraidServiceSendSmsWithUrlString:)]) {
-        [self.serviceDelegate mraidServiceSendSmsWithUrlString:urlString];
-    }
-}
-
 
 @end

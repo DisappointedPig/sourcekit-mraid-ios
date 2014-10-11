@@ -1,25 +1,24 @@
 //
-//  MRAIDModalViewController.m
+//  SKMRAIDModalViewController.m
 //  MRAID
 //
 //  Created by Jay Tucker on 9/20/13.
 //  Copyright (c) 2013 Nexage, Inc. All rights reserved.
 //
 
-#import "MRAIDModalViewController.h"
+#import "SKMRAIDModalViewController.h"
 
-#import "MRAIDUtil.h"
-#import "SourceKitLogger.h"
-#import "MRAIDView.h"
-#import "MRAIDOrientationProperties.h"
+#import "SKMRAIDUtil.h"
+#import "SKLogger.h"
+#import "SKMRAIDOrientationProperties.h"
 
-@interface MRAIDModalViewController ()
+@interface SKMRAIDModalViewController ()
 {
     BOOL isStatusBarHidden;
     BOOL hasViewAppeared;
     BOOL hasRotated;
     
-    MRAIDOrientationProperties *orientationProperties;
+    SKMRAIDOrientationProperties *orientationProperties;
     UIInterfaceOrientation preferredOrientation;
 }
 
@@ -27,14 +26,14 @@
 
 @end
 
-@implementation MRAIDModalViewController
+@implementation SKMRAIDModalViewController
 
 - (id)init
 {
     return [self initWithOrientationProperties:nil];
 }
 
-- (id)initWithOrientationProperties:(MRAIDOrientationProperties *)orientationProps
+- (id)initWithOrientationProperties:(SKMRAIDOrientationProperties *)orientationProps
 {
     self = [super init];
     if (self) {
@@ -43,7 +42,7 @@
         if (orientationProps) {
             orientationProperties = orientationProps;
         } else {
-            orientationProperties = [[MRAIDOrientationProperties alloc] init];
+            orientationProperties = [[SKMRAIDOrientationProperties alloc] init];
         }
         
         UIInterfaceOrientation currentInterfaceOrientation = [[UIApplication sharedApplication] statusBarOrientation];
@@ -81,13 +80,24 @@
 #pragma mark - status bar
 
 // This is to hide the status bar on iOS 6 and lower.
--(void)viewWillAppear:(BOOL)animated{
-    [SourceKitLogger debug:[NSString stringWithFormat:@"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat:@"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
 
     isStatusBarHidden = [[UIApplication sharedApplication] isStatusBarHidden];
     if (SYSTEM_VERSION_LESS_THAN(@"7.0")) {
         [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationFade];
     }
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat:@"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
+    hasViewAppeared = YES;
     
     if (hasRotated) {
         [self.delegate mraidModalViewControllerDidRotate:self];
@@ -95,13 +105,10 @@
     }
 }
 
-- (void)viewDidAppear:(BOOL)animated
+-(void)viewWillDisappear:(BOOL)animated
 {
-    [SourceKitLogger debug:[NSString stringWithFormat:@"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
-    hasViewAppeared = YES;
-}
-
--(void)viewWillDisappear:(BOOL)animated{
+    [super viewWillDisappear:animated];
+    
     if (SYSTEM_VERSION_LESS_THAN(@"7.0")){
         [[UIApplication sharedApplication] setStatusBarHidden:isStatusBarHidden withAnimation:UIStatusBarAnimationFade];
     }
@@ -146,13 +153,13 @@
         }
     }
     
-    [SourceKitLogger debug:[NSString stringWithFormat: @"%@ %@ %@", [self.class description], NSStringFromSelector(_cmd), (retval ? @"YES" : @"NO")]];
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat: @"%@ %@ %@", [self.class description], NSStringFromSelector(_cmd), (retval ? @"YES" : @"NO")]];
     return retval;
 }
 
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
 {
-    [SourceKitLogger debug:[NSString stringWithFormat: @"%@ %@ %@",
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat: @"%@ %@ %@",
                             [self.class description],
                             NSStringFromSelector(_cmd),
                             [self stringfromUIInterfaceOrientation:preferredOrientation]]];
@@ -161,7 +168,7 @@
 
 - (NSUInteger)supportedInterfaceOrientations
 {
-    [SourceKitLogger debug:[NSString stringWithFormat: @"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat: @"%@ %@", [self.class description], NSStringFromSelector(_cmd)]];
     if (orientationProperties.forceOrientation == MRAIDForceOrientationPortrait) {
         return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
     }
@@ -183,10 +190,27 @@
     return UIInterfaceOrientationMaskAll;
 }
 
+- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    
+    // willRotateToInterfaceOrientation code goes here
+   
+    [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+        // willAnimateRotationToInterfaceOrientation code goes here
+        [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+        
+    } completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+        // didRotateFromInterfaceOrientation goes here
+        if (hasViewAppeared) {
+            [self.delegate mraidModalViewControllerDidRotate:self];
+            hasRotated = NO;
+        }
+    }];
+}
+
 - (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation
 {
     UIInterfaceOrientation toInterfaceOrientation = self.interfaceOrientation;
-    [SourceKitLogger debug:[NSString stringWithFormat:@"%@ %@from %@ to %@",
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat:@"%@ %@from %@ to %@",
                       [self.class description],
                       NSStringFromSelector(_cmd),
                       [self stringfromUIInterfaceOrientation:fromInterfaceOrientation],
@@ -198,7 +222,7 @@
     }
 }
 
-- (void)forceToOrientation:(MRAIDOrientationProperties *)orientationProps;
+- (void)forceToOrientation:(SKMRAIDOrientationProperties *)orientationProps;
 {
     NSString *orientationString;
     switch (orientationProps.forceOrientation) {
@@ -216,7 +240,7 @@
             break;
     }
     
-    [SourceKitLogger debug:[NSString stringWithFormat: @"%@ %@ %@ %@",
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat: @"%@ %@ %@ %@",
                       [self.class description],
                       NSStringFromSelector(_cmd),
                       (orientationProperties.allowOrientationChange ? @"YES" : @"NO"),
@@ -288,7 +312,7 @@
         }
     }
     
-    [SourceKitLogger debug:[NSString stringWithFormat:@"requesting from %@ to %@",
+    [SKLogger debug:@"MRAID - ModalViewController" withMessage:[NSString stringWithFormat:@"requesting from %@ to %@",
                             [self stringfromUIInterfaceOrientation:currentInterfaceOrientation],
                             [self stringfromUIInterfaceOrientation:preferredOrientation]]];
     
